@@ -9,8 +9,8 @@
  *    X = 1 IP HOST
  *    X = 2 IP GATEWAY
  *    X = 3 IP SUBNET MASK
- *    X = 4 TEMPO CHIUSURA RELAY BISTABILE IN SECONDI
- *    X = 5 DHCP, 1 ABILITATO, 2 CONFIGURAZIONE STATICA DA PARAMETRI SOPRA
+ *    X = 4 DHCP, 1 ABILITATO, 2 CONFIGURAZIONE STATICA DA PARAMETRI SOPRA
+ *    X = N CON N 5, 6, 7, 8 TEMPO CHIUSURA RELAY BISTABILE IN SECONDI per relay 1, 2, 3, 4 RISPETTIVAMENTE
  *  http://IP:PORT/reset riavvia il dispositivo caricando le configurazioni settate
  *  http://IP:PORT/relayXoff dove X è intero compreso tra 1 e 4 inclusi, in caso di disattivazione
  *    prematura del relay se è settato un tempo di chiusura lungo (es. luce che si accende per 60 secondi
@@ -90,7 +90,7 @@ struct MConfig   {
   byte ip[4]; //ip statico host
   byte gateway[4]; //gateway sottorete
   byte subnet[4]; //subnet mask sottorete
-  uint32_t closetime; //tempo di chiusura
+  uint32_t closetimes[N_RELAYS]; //tempo di chiusura
   uint16_t crc; //codice a ridondanza ciclica per validare la correttezza della struttura dati
 };
 typedef struct MConfig MConfig;
@@ -102,10 +102,11 @@ String http_request_buffer; //variabile per contenere la richiesta http
 
 int pins[] = {4, 5, 6, 7}; //pin dei relay sulla shield
 unsigned long int times[] = {0, 0, 0, 0}; //timer countdown dei relay
+char* ipbuf = malloc(sizeof(char)*15); //buffer per decodifica bytes ip a stringa
 MConfig configs; //variabile che mantiene le configurazioni lette dalla eeprom al boot
 
 MConfig defaultConfigs { //configurazioni di default
-  true, {10, 0, 0, 252}, {10, 10, 0, 254}, {255, 255, 255, 0}, 1
+  true, {10, 0, 0, 252}, {10, 0, 0, 254}, {255, 255, 255, 0}, {1, 1, 1, 1}, 1
 };
 
 /*
@@ -186,7 +187,7 @@ void loop() {
               byte pin = pins[pin_idx]; //recupero il pin dall'indice
 
               if(value) { //se devo accenderlo
-                times[pin_idx] = configs.closetime*1000; //imposto il tempo per il timer di quel relay
+                times[pin_idx] = configs.closetimes[pin_idx]*1000; //imposto il tempo per il timer di quel relay
               }
               else {
                 times[pin_idx] = 0; //resetto il timer per quel pin
@@ -224,13 +225,25 @@ void loop() {
               case 3:
                 decodeIP(value, configs.subnet); //idem per la subnet mask
                 config_changed = true;
-              break;
-              case 4: //così per il tempo di apertura dei relay bistabili
-                configs.closetime = value.toInt(); //se setto il tempo leggo e salvo nelle conf attuali
-                config_changed = true;
               break; 
-              case 5: //idem ancora per dhcp
+              case 4: //idem ancora per dhcp
                 configs.dhcp = value == "1" ? true : false;
+                config_changed = true;
+              break;
+              case 5: //così per il tempo di apertura dei relay bistabili
+                configs.closetimes[0] = value.toInt(); //se setto il tempo leggo e salvo nelle conf attuali
+                config_changed = true;
+              break;
+              case 6: //così per il tempo di apertura dei relay bistabili
+                configs.closetimes[1] = value.toInt(); //se setto il tempo leggo e salvo nelle conf attuali
+                config_changed = true;
+              break;
+              case 7: //così per il tempo di apertura dei relay bistabili
+                configs.closetimes[2] = value.toInt(); //se setto il tempo leggo e salvo nelle conf attuali
+                config_changed = true;
+              break;
+              case 8: //così per il tempo di apertura dei relay bistabili
+                configs.closetimes[3] = value.toInt(); //se setto il tempo leggo e salvo nelle conf attuali
                 config_changed = true;
               break;
             }
@@ -255,11 +268,14 @@ void loop() {
           if(config_changed) //se la configurazione flaggata cambiata
             client.print("Config changed<hr>"); //stampo un feedback
 
-          printForm(client, "DHCP", 5, configs.dhcp);
+          printForm(client, "DHCP", 4, configs.dhcp);
           printForm(client, "IP", 1, configs.ip);
           printForm(client, "Gateway", 2, configs.gateway);
           printForm(client, "Subnet", 3, configs.subnet);
-          printForm(client, "Contact Time (s)", 4, configs.closetime);
+          printForm(client, "Contact Time R1 (s)", 5, configs.closetimes[0]);
+          printForm(client, "Contact Time R2 (s)", 6, configs.closetimes[1]);
+          printForm(client, "Contact Time R3 (s)", 7, configs.closetimes[2]);
+          printForm(client, "Contact Time R4 (s)", 8, configs.closetimes[3]);
           resetForm(client);
           client.print("<hr>");
           relayControls(client);
@@ -350,7 +366,6 @@ void timeTickerRoutine(void) {
  * funzioni per disegnare form di configurazione
  */
 void printForm(EthernetClient client, String text, int param, byte value[]) {
-  char* ipbuf = malloc(sizeof(char)*15);
   sprintf(ipbuf, "%d.%d.%d.%d", value[0], value[1], value[2], value[3]);
 
   client.print("<form method=\"GET\" action=\"/setup\">");
