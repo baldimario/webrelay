@@ -61,6 +61,8 @@
 #define N_RELAYS 4 //definisce quanti relay ci sono sul modull
 #define DELTA_T_MS 50 //millisecondi di risoluzione per calcolo tempo
 #define HTTP_PORT 80 //porta webserver
+#define RELAY_ON HIGH
+#define RELAY_OFF LOW
 
 /*
  * MAC address dispositivo, piccola chicca: è Nicola in esadecimale
@@ -98,7 +100,7 @@ Ticker timeTicker(timeTickerRoutine, DELTA_T_MS, 0, MILLIS); //scheduler per cal
 
 String http_request_buffer; //variabile per contenere la richiesta http
 
-int pins[] = {2, 3, 4, 5}; //pin dei relay
+int pins[] = {4, 5, 6, 7}; //pin dei relay sulla shield
 unsigned long int times[] = {0, 0, 0, 0}; //timer countdown dei relay
 MConfig configs; //variabile che mantiene le configurazioni lette dalla eeprom al boot
 
@@ -126,11 +128,11 @@ void setup() {
     pinMode(pins[i], OUTPUT);
   
   /*
-   * La shield relay ha i livelli logici invertiti, dunque alzo tutti i valori logici dei pin
-   * per spegnere tutti i relay al boot
+   * Alcune shield relay hanno i livelli logici invertiti, dunque alzo tutti i 
+   * valori logici dei pin per spegnere tutti i relay al boot
    */
   for (int i = 0; i < N_RELAYS; i++) 
-    digitalWrite(pins[i], HIGH);
+    digitalWrite(pins[i], RELAY_OFF);
 
   initEthernet();
 
@@ -337,7 +339,7 @@ void timeTickerRoutine(void) {
 
       if(times[i] <= 0) { //se il timer del relay i-esimo scende a 0 o meno
         times[i] = 0; //imposto a 0 il timer (potrebbe essere negativo)
-        digitalWrite(pins[i], HIGH); //setto alto (SPENGO, logica invertita shield) il relay
+        digitalWrite(pins[i], RELAY_OFF); //setto basso (SPENGO) il relay
       }
     }
   }
