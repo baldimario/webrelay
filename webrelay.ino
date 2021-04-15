@@ -12,7 +12,7 @@
  *    X = 4 TEMPO CHIUSURA RELAY BISTABILE IN SECONDI
  *    X = 5 DHCP, 1 ABILITATO, 2 CONFIGURAZIONE STATICA DA PARAMETRI SOPRA
  *  http://IP:PORT/reset riavvia il dispositivo caricando le configurazioni settate
- *  http://IP:PORT/relayXoff dove X è intero compreso tra 0 e 3 inclusi, in caso di disattivazione
+ *  http://IP:PORT/relayXoff dove X è intero compreso tra 1 e 4 inclusi, in caso di disattivazione
  *    prematura del relay se è settato un tempo di chiusura lungo (es. luce che si accende per 60 secondi
  *    e voglio spegnerla prima)
  */
