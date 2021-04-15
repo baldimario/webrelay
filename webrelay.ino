@@ -1,6 +1,6 @@
 /*  Web Relay v1.0
  *  mariobaldi.py@gmail.com 
- *  17/04/2021
+ *  15/04/2021
  *  per Nicola 
  *  
  *  Endpoints:
@@ -180,19 +180,19 @@ void loop() {
           if(http_request_buffer.substring(5, 10) == String("relay")) { //se richiedo l'endpoint "relay"
             Serial.println("RELAY"); //stampo per debug l'endpoint
             byte pin_idx = http_request_buffer.charAt(10) - 49; //48 ascii 0 -1 per l'index del pin
-            byte value = http_request_buffer.substring(11, 13) == String("on") ? LOW : HIGH; //per il valore acceso o spento
+            byte value = http_request_buffer.substring(11, 13) == String("on") ? RELAY_ON : RELAY_OFF; //per il valore acceso o spento
 
             if(pin_idx >= 0 && pin_idx < N_RELAYS) { //se il relay è tra 0 e N_RELAY
               byte pin = pins[pin_idx]; //recupero il pin dall'indice
 
-              if(!value) { //se devo accenderlo
+              if(value) { //se devo accenderlo
                 times[pin_idx] = configs.closetime*1000; //imposto il tempo per il timer di quel relay
               }
               else {
                 times[pin_idx] = 0; //resetto il timer per quel pin
               }
 
-              digitalWrite(pin, value); //setto il valore del pin che pilota il relay in logica inverita
+              digitalWrite(pin, value ? RELAY_ON : RELAY_OFF); //setto il valore del pin che pilota il relay in logica inverita
             }
           }
   
@@ -269,6 +269,7 @@ void loop() {
           delay(1); //buona norma
           client.stop(); //chiudo la connessione col client
           http_request_buffer = ""; //resetto la stringa della richiesta correttamente elaborata;
+          delay(100); //attendo 100 millisecondi prima di accettare un'altra richiesta altrimenti in caso di alimentazione scarsa il firmware può incepparsi e non servire la pagina web
         }
       }
     }
@@ -387,11 +388,11 @@ void resetForm(EthernetClient client) {
 }
 
 void relayControls(EthernetClient client) {
-  for(int i = 0; i < N_RELAYS; i++) {
+  for(int i = 1; i <= N_RELAYS; i++) {
     client.print("<form method=\"GET\" style=\"display: inline\" action=\"/relay");
     client.print(i);
     client.print("on\"><input type=\"submit\" value=\"");
-    client.print(i+1);
+    client.print(i);
     client.print("\"></form>");  
   }
 }
